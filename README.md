@@ -157,6 +157,7 @@ The following command line options are available for the `start` command:
 | --verbose      | Enable verbose logging                                                        | false      | -v    |
 | --account-type | Account type to use (individual, business, enterprise)                        | individual | -a    |
 | --manual       | Enable manual request approval                                                | false      | none  |
+| --risky        | Use `X-Initiator=agent` after the first session request                      | false      | none  |
 | --rate-limit   | Rate limit in seconds between requests                                        | none       | -r    |
 | --wait         | Wait instead of error when rate limit is hit                                  | false      | -w    |
 | --github-token | Provide GitHub token directly (must be generated using the `auth` subcommand) | none       | -g    |
@@ -422,6 +423,58 @@ bun run dev
 
 ```sh
 bun run start
+```
+
+### Production Mode (Risky)
+
+```sh
+bun run start --risky
+```
+
+## Private Risky Workflow
+
+This private repository uses two long-lived branches:
+
+- `all`: mirrors upstream branch `upstream/all`
+- `risky`: contains `all` plus your custom `--risky` mode patch
+
+### 1) Fresh Installation (New Device)
+
+```sh
+git clone https://github.com/<your-user>/<your-private-repo>.git
+cd <your-private-repo>
+
+# one-time upstream link
+git remote add upstream https://github.com/caozhiyuan/copilot-api
+
+git fetch upstream origin --prune
+git switch risky
+bun install
+bun run start --risky
+```
+
+### 2) Update Installation (Already Cloned)
+
+```sh
+git fetch upstream origin --prune
+
+# sync mirror branch with upstream
+git switch all
+git merge --ff-only upstream/all
+git push origin all
+
+# re-apply custom patch branch on top of updated all
+git switch risky
+git merge all
+git push origin risky
+```
+
+If `git merge all` reports conflicts, resolve them, then run:
+
+```sh
+git add <resolved-files>
+git commit
+git push origin risky
 ```
 
 ## Usage Tips
