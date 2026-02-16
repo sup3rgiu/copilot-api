@@ -49,6 +49,11 @@ export async function runServer(options: RunServerOptions): Promise<void> {
 
   state.manualApprove = options.manual
   state.forceAgentInitiator = options.risky
+  if (options.risky) {
+    consola.warn(
+      "Risky mode enabled: first session request uses X-Initiator=user, subsequent requests use X-Initiator=agent.",
+    )
+  }
   state.rateLimitSeconds = options.rateLimit
   state.rateLimitWait = options.rateLimitWait
   state.showToken = options.showToken
