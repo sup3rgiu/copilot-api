@@ -3,6 +3,7 @@ import { events } from "fetch-event-stream"
 
 import { copilotHeaders, copilotBaseUrl } from "~/lib/api-config"
 import { HTTPError } from "~/lib/error"
+import { logOutgoingCopilotRequest } from "~/lib/outgoing-request-log"
 import { state } from "~/lib/state"
 
 export const createChatCompletions = async (
@@ -38,10 +39,18 @@ export const createChatCompletions = async (
     "X-Initiator": initiator,
   }
 
+  const startedAt = Date.now()
   const response = await fetch(`${copilotBaseUrl(state)}/chat/completions`, {
     method: "POST",
     headers,
     body: JSON.stringify(payload),
+  })
+  logOutgoingCopilotRequest({
+    method: "POST",
+    path: "/chat/completions",
+    initiator,
+    status: response.status,
+    startedAt,
   })
 
   if (!response.ok) {

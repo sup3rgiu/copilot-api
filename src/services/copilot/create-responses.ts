@@ -3,6 +3,7 @@ import { events } from "fetch-event-stream"
 
 import { copilotBaseUrl, copilotHeaders } from "~/lib/api-config"
 import { HTTPError } from "~/lib/error"
+import { logOutgoingCopilotRequest } from "~/lib/outgoing-request-log"
 import { state } from "~/lib/state"
 
 export interface ResponsesPayload {
@@ -342,10 +343,18 @@ export const createResponses = async (
   // service_tier is not supported by github copilot
   payload.service_tier = null
 
+  const startedAt = Date.now()
   const response = await fetch(`${copilotBaseUrl(state)}/responses`, {
     method: "POST",
     headers,
     body: JSON.stringify(payload),
+  })
+  logOutgoingCopilotRequest({
+    method: "POST",
+    path: "/responses",
+    initiator: resolvedInitiator,
+    status: response.status,
+    startedAt,
   })
 
   if (!response.ok) {

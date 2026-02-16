@@ -8,6 +8,7 @@ import type {
 
 import { copilotBaseUrl, copilotHeaders } from "~/lib/api-config"
 import { HTTPError } from "~/lib/error"
+import { logOutgoingCopilotRequest } from "~/lib/outgoing-request-log"
 import { state } from "~/lib/state"
 
 export type MessagesStream = ReturnType<typeof events>
@@ -59,10 +60,18 @@ export const createMessages = async (
     headers["anthropic-beta"] = "interleaved-thinking-2025-05-14"
   }
 
+  const startedAt = Date.now()
   const response = await fetch(`${copilotBaseUrl(state)}/v1/messages`, {
     method: "POST",
     headers,
     body: JSON.stringify(payload),
+  })
+  logOutgoingCopilotRequest({
+    method: "POST",
+    path: "/v1/messages",
+    initiator,
+    status: response.status,
+    startedAt,
   })
 
   if (!response.ok) {
