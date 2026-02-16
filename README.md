@@ -438,6 +438,9 @@ This private repository uses two long-lived branches:
 - `all`: mirrors upstream branch `upstream/all`
 - `risky`: contains `all` plus your custom `--risky` mode patch
 
+Important:
+- Upstream updates come from `https://github.com/caozhiyuan/copilot-api` branch `all` (not `main`).
+
 ### 1) Fresh Installation (New Device)
 
 ```sh
@@ -447,7 +450,7 @@ cd <your-private-repo>
 # one-time upstream link
 git remote add upstream https://github.com/caozhiyuan/copilot-api
 
-git fetch upstream origin --prune
+git fetch --all --prune
 git switch risky
 bun install
 bun run start --risky
@@ -456,7 +459,7 @@ bun run start --risky
 ### 2) Update Installation (Already Cloned)
 
 ```sh
-git fetch upstream origin --prune
+git fetch --all --prune
 
 # sync mirror branch with upstream
 git switch all
