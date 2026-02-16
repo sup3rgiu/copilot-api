@@ -19,6 +19,7 @@ interface RunServerOptions {
   verbose: boolean
   accountType: string
   manual: boolean
+  risky: boolean
   rateLimit?: number
   rateLimitWait: boolean
   githubToken?: string
@@ -47,6 +48,7 @@ export async function runServer(options: RunServerOptions): Promise<void> {
   }
 
   state.manualApprove = options.manual
+  state.forceAgentInitiator = options.risky
   state.rateLimitSeconds = options.rateLimit
   state.rateLimitWait = options.rateLimitWait
   state.showToken = options.showToken
@@ -158,6 +160,12 @@ export const start = defineCommand({
       default: false,
       description: "Enable manual request approval",
     },
+    risky: {
+      type: "boolean",
+      default: false,
+      description:
+        "Use X-Initiator=agent after the first session request (first request stays user)",
+    },
     "rate-limit": {
       alias: "r",
       type: "string",
@@ -205,6 +213,7 @@ export const start = defineCommand({
       verbose: args.verbose,
       accountType: args["account-type"],
       manual: args.manual,
+      risky: args.risky,
       rateLimit,
       rateLimitWait: args.wait,
       githubToken: args["github-token"],

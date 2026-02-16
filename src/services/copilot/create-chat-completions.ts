@@ -29,11 +29,13 @@ export const createChatCompletions = async (
       isAgentCall = ["assistant", "tool"].includes(lastMessage.role)
     }
   }
+  const requestedInitiator = options?.initiator ?? (isAgentCall ? "agent" : "user")
+  const initiator = applyRiskyInitiator(requestedInitiator, payload)
 
   // Build headers and add X-Initiator
   const headers: Record<string, string> = {
     ...copilotHeaders(state, enableVision),
-    "X-Initiator": options?.initiator ?? (isAgentCall ? "agent" : "user"),
+    "X-Initiator": initiator,
   }
 
   const response = await fetch(`${copilotBaseUrl(state)}/chat/completions`, {
@@ -52,6 +54,21 @@ export const createChatCompletions = async (
   }
 
   return (await response.json()) as ChatCompletionResponse
+}
+
+const applyRiskyInitiator = (
+  requestedInitiator: "agent" | "user",
+  payload: ChatCompletionsPayload,
+) => {
+  if (!state.forceAgentInitiator || requestedInitiator === "agent") {
+    return requestedInitiator
+  }
+
+  const isFirstSessionRequest = !payload.messages.some((msg) =>
+    ["assistant", "tool"].includes(msg.role),
+  )
+
+  return isFirstSessionRequest ? "user" : "agent"
 }
 
 // Streaming types

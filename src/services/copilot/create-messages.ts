@@ -36,7 +36,9 @@ export const createMessages = async (
         lastMessage.content.some((block) => block.type !== "tool_result")
       : true
   }
-  const initiator = options?.initiator ?? (isInitiateRequest ? "user" : "agent")
+  const requestedInitiator =
+    options?.initiator ?? (isInitiateRequest ? "user" : "agent")
+  const initiator = applyRiskyInitiator(requestedInitiator, payload)
 
   const headers: Record<string, string> = {
     ...copilotHeaders(state, enableVision),
@@ -73,4 +75,27 @@ export const createMessages = async (
   }
 
   return (await response.json()) as AnthropicResponse
+}
+
+const applyRiskyInitiator = (
+  requestedInitiator: "agent" | "user",
+  payload: AnthropicMessagesPayload,
+) => {
+  if (!state.forceAgentInitiator || requestedInitiator === "agent") {
+    return requestedInitiator
+  }
+
+  const hasAssistantHistory = payload.messages.some((message) => {
+    if (message.role === "assistant") {
+      return true
+    }
+
+    if (message.role !== "user" || !Array.isArray(message.content)) {
+      return false
+    }
+
+    return message.content.some((block) => block.type === "tool_result")
+  })
+
+  return hasAssistantHistory ? "agent" : "user"
 }

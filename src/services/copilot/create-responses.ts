@@ -332,10 +332,11 @@ export const createResponses = async (
   { vision, initiator }: ResponsesRequestOptions,
 ): Promise<CreateResponsesReturn> => {
   if (!state.copilotToken) throw new Error("Copilot token not found")
+  const resolvedInitiator = applyRiskyInitiator(initiator, payload)
 
   const headers: Record<string, string> = {
     ...copilotHeaders(state, vision),
-    "X-Initiator": initiator,
+    "X-Initiator": resolvedInitiator,
   }
 
   // service_tier is not supported by github copilot
@@ -357,4 +358,38 @@ export const createResponses = async (
   }
 
   return (await response.json()) as ResponsesResult
+}
+
+const applyRiskyInitiator = (
+  requestedInitiator: "agent" | "user",
+  payload: ResponsesPayload,
+): "agent" | "user" => {
+  if (!state.forceAgentInitiator || requestedInitiator === "agent") {
+    return requestedInitiator
+  }
+
+  const inputItems = Array.isArray(payload.input) ? payload.input : []
+
+  const hasHistory = inputItems.some((item) => {
+    if (typeof item !== "object" || item === null) {
+      return true
+    }
+
+    const record = item as Record<string, unknown>
+    const role =
+      typeof record.role === "string" ? record.role.toLowerCase() : undefined
+    if (role === "assistant") {
+      return true
+    }
+
+    const type =
+      typeof record.type === "string" ? record.type.toLowerCase() : undefined
+    return (
+      type === "function_call"
+      || type === "function_call_output"
+      || type === "reasoning"
+    )
+  })
+
+  return hasHistory ? "agent" : "user"
 }

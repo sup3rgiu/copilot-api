@@ -9,6 +9,7 @@ export interface State {
   vsCodeVersion?: string
 
   manualApprove: boolean
+  forceAgentInitiator: boolean
   rateLimitWait: boolean
   showToken: boolean
 
@@ -21,6 +22,7 @@ export interface State {
 export const state: State = {
   accountType: "individual",
   manualApprove: false,
+  forceAgentInitiator: false,
   rateLimitWait: false,
   showToken: false,
   verbose: false,
