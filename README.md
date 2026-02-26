@@ -416,19 +416,19 @@ The project can be run from source in several ways:
 ### Development Mode
 
 ```sh
-bun run dev
+bun run dev start
 ```
 
 ### Production Mode
 
 ```sh
-bun run start
+bun run start start
 ```
 
 ### Production Mode (Risky)
 
 ```sh
-bun run start --risky
+bun run start start --risky
 ```
 
 ## Risky Workflow
@@ -447,7 +447,7 @@ cd copilot-api
 git fetch --all --prune
 git switch risky
 bun install
-bun run start --risky
+bun run start start --risky
 ```
 
 ### 2) Update Risky Branch (when `all` gets new commits)
