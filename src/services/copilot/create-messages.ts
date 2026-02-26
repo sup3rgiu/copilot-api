@@ -88,23 +88,23 @@ export const createMessages = async (
 
 const applyRiskyInitiator = (
   requestedInitiator: "agent" | "user",
-  payload: AnthropicMessagesPayload,
+  _payload: AnthropicMessagesPayload,
 ) => {
-  if (!state.forceAgentInitiator || requestedInitiator === "agent") {
+  if (!state.forceAgentInitiator) {
     return requestedInitiator
   }
 
-  const hasAssistantHistory = payload.messages.some((message) => {
-    if (message.role === "assistant") {
-      return true
+  if (requestedInitiator === "agent") {
+    if (!state.firstRiskyRequestSent) {
+      state.firstRiskyRequestSent = true
     }
+    return "agent"
+  }
 
-    if (message.role !== "user" || !Array.isArray(message.content)) {
-      return false
-    }
+  if (state.firstRiskyRequestSent) {
+    return "agent"
+  }
 
-    return message.content.some((block) => block.type === "tool_result")
-  })
-
-  return hasAssistantHistory ? "agent" : "user"
+  state.firstRiskyRequestSent = true
+  return "user"
 }

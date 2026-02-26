@@ -67,17 +67,25 @@ export const createChatCompletions = async (
 
 const applyRiskyInitiator = (
   requestedInitiator: "agent" | "user",
-  payload: ChatCompletionsPayload,
+  _payload: ChatCompletionsPayload,
 ) => {
-  if (!state.forceAgentInitiator || requestedInitiator === "agent") {
+  if (!state.forceAgentInitiator) {
     return requestedInitiator
   }
 
-  const isFirstSessionRequest = !payload.messages.some((msg) =>
-    ["assistant", "tool"].includes(msg.role),
-  )
+  if (requestedInitiator === "agent") {
+    if (!state.firstRiskyRequestSent) {
+      state.firstRiskyRequestSent = true
+    }
+    return "agent"
+  }
 
-  return isFirstSessionRequest ? "user" : "agent"
+  if (state.firstRiskyRequestSent) {
+    return "agent"
+  }
+
+  state.firstRiskyRequestSent = true
+  return "user"
 }
 
 // Streaming types

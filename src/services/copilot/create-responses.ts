@@ -371,34 +371,23 @@ export const createResponses = async (
 
 const applyRiskyInitiator = (
   requestedInitiator: "agent" | "user",
-  payload: ResponsesPayload,
+  _payload: ResponsesPayload,
 ): "agent" | "user" => {
-  if (!state.forceAgentInitiator || requestedInitiator === "agent") {
+  if (!state.forceAgentInitiator) {
     return requestedInitiator
   }
 
-  const inputItems = Array.isArray(payload.input) ? payload.input : []
-
-  const hasHistory = inputItems.some((item) => {
-    if (typeof item !== "object" || item === null) {
-      return true
+  if (requestedInitiator === "agent") {
+    if (!state.firstRiskyRequestSent) {
+      state.firstRiskyRequestSent = true
     }
+    return "agent"
+  }
 
-    const record = item as Record<string, unknown>
-    const role =
-      typeof record.role === "string" ? record.role.toLowerCase() : undefined
-    if (role === "assistant") {
-      return true
-    }
+  if (state.firstRiskyRequestSent) {
+    return "agent"
+  }
 
-    const type =
-      typeof record.type === "string" ? record.type.toLowerCase() : undefined
-    return (
-      type === "function_call"
-      || type === "function_call_output"
-      || type === "reasoning"
-    )
-  })
-
-  return hasHistory ? "agent" : "user"
+  state.firstRiskyRequestSent = true
+  return "user"
 }

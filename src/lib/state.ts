@@ -10,6 +10,7 @@ export interface State {
 
   manualApprove: boolean
   forceAgentInitiator: boolean
+  firstRiskyRequestSent: boolean
   rateLimitWait: boolean
   showToken: boolean
 
@@ -23,6 +24,7 @@ export const state: State = {
   accountType: "individual",
   manualApprove: false,
   forceAgentInitiator: false,
+  firstRiskyRequestSent: false,
   rateLimitWait: false,
   showToken: false,
   verbose: false,

@@ -431,24 +431,18 @@ bun run start
 bun run start --risky
 ```
 
-## Private Risky Workflow
+## Risky Workflow
 
-This private repository uses two long-lived branches:
+This repository uses two long-lived branches:
 
-- `all`: mirrors upstream branch `upstream/all`
-- `risky`: contains `all` plus your custom `--risky` mode patch
-
-Important:
-- Upstream updates come from `https://github.com/caozhiyuan/copilot-api` branch `all` (not `main`).
+- `all`: tracks the author's updates from `origin/all`
+- `risky`: contains `all` plus custom `--risky` mode commits, rebased on top
 
 ### 1) Fresh Installation (New Device)
 
 ```sh
-git clone https://github.com/<your-user>/<your-private-repo>.git
-cd <your-private-repo>
-
-# one-time upstream link
-git remote add upstream https://github.com/caozhiyuan/copilot-api
+git clone https://github.com/sup3rgiu/copilot-api.git
+cd copilot-api
 
 git fetch --all --prune
 git switch risky
@@ -456,28 +450,24 @@ bun install
 bun run start --risky
 ```
 
-### 2) Update Installation (Already Cloned)
+### 2) Update Risky Branch (when `all` gets new commits)
 
 ```sh
-git fetch --all --prune
+# or run: ./update-risky.sh
 
-# sync mirror branch with upstream
+git fetch origin
 git switch all
-git merge --ff-only upstream/all
-git push origin all
+git pull origin all
 
-# re-apply custom patch branch on top of updated all
 git switch risky
-git merge all
-git push origin risky
+git rebase all
 ```
 
-If `git merge all` reports conflicts, resolve them, then run:
+If `git rebase all` reports conflicts, resolve them, then run:
 
 ```sh
 git add <resolved-files>
-git commit
-git push origin risky
+git rebase --continue
 ```
 
 ## Usage Tips
