@@ -371,7 +371,7 @@ export const createResponses = async (
 
 const applyRiskyInitiator = (
   requestedInitiator: "agent" | "user",
-  _payload: ResponsesPayload,
+  payload: ResponsesPayload,
 ): "agent" | "user" => {
   if (!state.forceAgentInitiator) {
     return requestedInitiator
@@ -388,6 +388,28 @@ const applyRiskyInitiator = (
     return "agent"
   }
 
+  // Check payload history to detect server restart mid-session:
+  // if assistant/tool items exist in input, it's not the first request
+  const inputItems = Array.isArray(payload.input) ? payload.input : []
+  const hasHistory = inputItems.some((item) => {
+    if (typeof item !== "object" || item === null) {
+      return true
+    }
+    const record = item as Record<string, unknown>
+    const role =
+      typeof record.role === "string" ? record.role.toLowerCase() : undefined
+    if (role === "assistant") {
+      return true
+    }
+    const type =
+      typeof record.type === "string" ? record.type.toLowerCase() : undefined
+    return (
+      type === "function_call"
+      || type === "function_call_output"
+      || type === "reasoning"
+    )
+  })
+
   state.firstRiskyRequestSent = true
-  return "user"
+  return hasHistory ? "agent" : "user"
 }

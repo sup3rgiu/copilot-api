@@ -88,7 +88,7 @@ export const createMessages = async (
 
 const applyRiskyInitiator = (
   requestedInitiator: "agent" | "user",
-  _payload: AnthropicMessagesPayload,
+  payload: AnthropicMessagesPayload,
 ) => {
   if (!state.forceAgentInitiator) {
     return requestedInitiator
@@ -105,6 +105,18 @@ const applyRiskyInitiator = (
     return "agent"
   }
 
+  // Check payload history to detect server restart mid-session:
+  // if assistant messages or tool results exist, it's not the first request
+  const hasHistory = payload.messages.some((message) => {
+    if (message.role === "assistant") {
+      return true
+    }
+    if (message.role === "user" && Array.isArray(message.content)) {
+      return message.content.some((block) => block.type === "tool_result")
+    }
+    return false
+  })
+
   state.firstRiskyRequestSent = true
-  return "user"
+  return hasHistory ? "agent" : "user"
 }

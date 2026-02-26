@@ -67,7 +67,7 @@ export const createChatCompletions = async (
 
 const applyRiskyInitiator = (
   requestedInitiator: "agent" | "user",
-  _payload: ChatCompletionsPayload,
+  payload: ChatCompletionsPayload,
 ) => {
   if (!state.forceAgentInitiator) {
     return requestedInitiator
@@ -84,8 +84,14 @@ const applyRiskyInitiator = (
     return "agent"
   }
 
+  // Check payload history to detect server restart mid-session:
+  // if assistant/tool messages exist, it's not the first request
+  const hasHistory = payload.messages.some((msg) =>
+    ["assistant", "tool"].includes(msg.role),
+  )
+
   state.firstRiskyRequestSent = true
-  return "user"
+  return hasHistory ? "agent" : "user"
 }
 
 // Streaming types
