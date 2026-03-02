@@ -13,8 +13,11 @@ git rebase upstream/all
 echo "Pushing updated all to origin..."
 git push origin all --force-with-lease
 
-echo "Rebasing risky onto updated all..."
+echo "Merging all into risky..."
 git checkout risky
-git rebase all
+git merge all
+
+echo "Pushing risky to origin..."
+git push origin risky
 
 echo "risky branch updated successfully!"
