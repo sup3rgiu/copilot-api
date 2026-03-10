@@ -54,9 +54,16 @@ export async function runServer(options: RunServerOptions): Promise<void> {
 
   state.manualApprove = options.manual
   state.forceAgentInitiator = options.risky
+  if (options.riskyUserInterval) {
+    state.riskyUserInterval = Number(options.riskyUserInterval)
+  }
   if (options.risky) {
+    const intervalMsg =
+      state.riskyUserInterval ?
+        ` (sending x-initiator=user every ${state.riskyUserInterval} forced requests)`
+      : ""
     consola.warn(
-      "Risky mode enabled: first session request uses x-initiator=user, subsequent requests use x-initiator=agent.",
+      `Risky mode enabled: first session request uses x-initiator=user, subsequent requests use x-initiator=agent.${intervalMsg}`,
     )
   }
   state.rateLimitSeconds = options.rateLimit
@@ -69,6 +76,7 @@ export async function runServer(options: RunServerOptions): Promise<void> {
   cacheVsCodeSessionId()
 
   if (options.githubToken) {
+    // eslint-disable-next-line require-atomic-updates
     state.githubToken = options.githubToken
     consola.info("Using provided GitHub token")
   } else {
@@ -177,6 +185,11 @@ export const start = defineCommand({
       default: false,
       description:
         "Use x-initiator=agent after the first session request (first request stays user)",
+    },
+    "risky-user-interval": {
+      type: "string",
+      description:
+        "When using --risky, send x-initiator=user every N forced requests to avoid abuse detection",
     },
     "rate-limit": {
       alias: "r",

@@ -427,6 +427,13 @@ const applyRiskyInitiator = (
   }
 
   if (state.firstRiskyRequestSent) {
+    if (state.riskyUserInterval && state.riskyUserInterval > 0) {
+      state.riskyForcedCount++
+      if (state.riskyForcedCount >= state.riskyUserInterval) {
+        state.riskyForcedCount = 0
+        return "user"
+      }
+    }
     return "agent"
   }
 

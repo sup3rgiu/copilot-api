@@ -158,6 +158,7 @@ The following command line options are available for the `start` command:
 | --account-type | Account type to use (individual, business, enterprise)                        | individual | -a    |
 | --manual       | Enable manual request approval                                                | false      | none  |
 | --risky        | Use `X-Initiator=agent` after the first session request                      | false      | none  |
+| --risky-user-interval | When using `--risky`, send `x-initiator=user` every N forced requests to avoid abuse detection | none  | none  |
 | --rate-limit   | Rate limit in seconds between requests                                        | none       | -r    |
 | --wait         | Wait instead of error when rate limit is hit                                  | false      | -w    |
 | --github-token | Provide GitHub token directly (must be generated using the `auth` subcommand) | none       | -g    |
@@ -445,6 +446,12 @@ bun run start start
 
 ```sh
 bun run start start --risky
+```
+
+Optionally, to periodically let a `x-initiator=user` request through (every N forced conversions) to reduce abuse detection risk:
+
+```sh
+bun run start start --risky --risky-user-interval 3
 ```
 
 ## Risky Workflow

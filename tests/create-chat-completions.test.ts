@@ -101,3 +101,106 @@ test("risky mode keeps explicit agent override for subagent flows", async () => 
   expect(headers["x-initiator"]).toBe("agent")
   state.forceAgentInitiator = false
 })
+
+test("risky-user-interval sends user every Nth forced request", async () => {
+  state.forceAgentInitiator = true
+  state.firstRiskyRequestSent = true
+  state.riskyUserInterval = 3
+  state.riskyForcedCount = 0
+
+  const payload: ChatCompletionsPayload = {
+    messages: [
+      { role: "user", content: "first turn" },
+      { role: "assistant", content: "response" },
+      { role: "user", content: "follow up" },
+    ],
+    model: "gpt-test",
+  }
+
+  // Request 1: forcedCount goes 0→1, should be agent
+  await createChatCompletions(payload, { requestId: "t1" })
+  expect(getLastHeaders()["x-initiator"]).toBe("agent")
+
+  // Request 2: forcedCount goes 1→2, should be agent
+  await createChatCompletions(payload, { requestId: "t2" })
+  expect(getLastHeaders()["x-initiator"]).toBe("agent")
+
+  // Request 3: forcedCount goes 2→3, hits interval → user, counter resets
+  await createChatCompletions(payload, { requestId: "t3" })
+  expect(getLastHeaders()["x-initiator"]).toBe("user")
+  expect(state.riskyForcedCount).toBe(0)
+
+  // Request 4: forcedCount goes 0→1 again, should be agent
+  await createChatCompletions(payload, { requestId: "t4" })
+  expect(getLastHeaders()["x-initiator"]).toBe("agent")
+
+  Object.assign(state, {
+    forceAgentInitiator: false,
+    riskyUserInterval: undefined,
+    riskyForcedCount: 0,
+  })
+})
+
+test("risky mode without interval unchanged behavior", async () => {
+  state.forceAgentInitiator = true
+  state.firstRiskyRequestSent = true
+  state.riskyUserInterval = undefined
+  state.riskyForcedCount = 0
+
+  const payload: ChatCompletionsPayload = {
+    messages: [
+      { role: "user", content: "first turn" },
+      { role: "assistant", content: "response" },
+      { role: "user", content: "follow up" },
+    ],
+    model: "gpt-test",
+  }
+
+  // All should be agent without interval set
+  await createChatCompletions(payload, { requestId: "t1" })
+  expect(getLastHeaders()["x-initiator"]).toBe("agent")
+  await createChatCompletions(payload, { requestId: "t2" })
+  expect(getLastHeaders()["x-initiator"]).toBe("agent")
+  await createChatCompletions(payload, { requestId: "t3" })
+  expect(getLastHeaders()["x-initiator"]).toBe("agent")
+
+  state.forceAgentInitiator = false
+})
+
+test("risky-user-interval does not count agent-initiated requests", async () => {
+  state.forceAgentInitiator = true
+  state.firstRiskyRequestSent = true
+  state.riskyUserInterval = 2
+  state.riskyForcedCount = 0
+
+  const userPayload: ChatCompletionsPayload = {
+    messages: [
+      { role: "user", content: "first turn" },
+      { role: "assistant", content: "response" },
+      { role: "user", content: "follow up" },
+    ],
+    model: "gpt-test",
+  }
+
+  // Agent-initiated request should not affect counter
+  await createChatCompletions(userPayload, {
+    requestId: "t1",
+    subagentMarker: { session_id: "s1", agent_id: "a1", agent_type: "test" },
+  })
+  expect(getLastHeaders()["x-initiator"]).toBe("agent")
+  expect(state.riskyForcedCount).toBe(0) // counter untouched
+
+  // User request 1: forcedCount 0→1, agent
+  await createChatCompletions(userPayload, { requestId: "t2" })
+  expect(getLastHeaders()["x-initiator"]).toBe("agent")
+
+  // User request 2: forcedCount 1→2, hits interval → user
+  await createChatCompletions(userPayload, { requestId: "t3" })
+  expect(getLastHeaders()["x-initiator"]).toBe("user")
+
+  Object.assign(state, {
+    forceAgentInitiator: false,
+    riskyUserInterval: undefined,
+    riskyForcedCount: 0,
+  })
+})

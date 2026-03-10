@@ -14,6 +14,8 @@ export interface State {
   manualApprove: boolean
   forceAgentInitiator: boolean
   firstRiskyRequestSent: boolean
+  riskyUserInterval?: number
+  riskyForcedCount: number
   rateLimitWait: boolean
   showToken: boolean
 
@@ -28,6 +30,7 @@ export const state: State = {
   manualApprove: false,
   forceAgentInitiator: false,
   firstRiskyRequestSent: false,
+  riskyForcedCount: 0,
   rateLimitWait: false,
   showToken: false,
   verbose: false,
