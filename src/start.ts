@@ -12,7 +12,12 @@ import { initProxyFromEnv } from "./lib/proxy"
 import { generateEnvScript } from "./lib/shell"
 import { state } from "./lib/state"
 import { setupCopilotToken, setupGitHubToken } from "./lib/token"
-import { cacheModels, cacheVSCodeVersion } from "./lib/utils"
+import {
+  cacheMacMachineId,
+  cacheModels,
+  cacheVSCodeVersion,
+  cacheVsCodeSessionId,
+} from "./lib/utils"
 
 interface RunServerOptions {
   port: number
@@ -51,7 +56,7 @@ export async function runServer(options: RunServerOptions): Promise<void> {
   state.forceAgentInitiator = options.risky
   if (options.risky) {
     consola.warn(
-      "Risky mode enabled: first session request uses X-Initiator=user, subsequent requests use X-Initiator=agent.",
+      "Risky mode enabled: first session request uses x-initiator=user, subsequent requests use x-initiator=agent.",
     )
   }
   state.rateLimitSeconds = options.rateLimit
@@ -60,6 +65,8 @@ export async function runServer(options: RunServerOptions): Promise<void> {
 
   await ensurePaths()
   await cacheVSCodeVersion()
+  cacheMacMachineId()
+  cacheVsCodeSessionId()
 
   if (options.githubToken) {
     state.githubToken = options.githubToken
@@ -169,7 +176,7 @@ export const start = defineCommand({
       type: "boolean",
       default: false,
       description:
-        "Use X-Initiator=agent after the first session request (first request stays user)",
+        "Use x-initiator=agent after the first session request (first request stays user)",
     },
     "rate-limit": {
       alias: "r",

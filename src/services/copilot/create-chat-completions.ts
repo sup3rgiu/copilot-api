@@ -1,6 +1,8 @@
 import consola from "consola"
 import { events } from "fetch-event-stream"
 
+import type { SubagentMarker } from "~/routes/messages/subagent-marker"
+
 import { copilotHeaders, copilotBaseUrl } from "~/lib/api-config"
 import { HTTPError } from "~/lib/error"
 import { logOutgoingCopilotRequest } from "~/lib/outgoing-request-log"
@@ -8,8 +10,10 @@ import { state } from "~/lib/state"
 
 export const createChatCompletions = async (
   payload: ChatCompletionsPayload,
-  options?: {
-    initiator?: "agent" | "user"
+  options: {
+    subagentMarker?: SubagentMarker | null
+    requestId: string
+    sessionId?: string
   },
 ) => {
   if (!state.copilotToken) throw new Error("Copilot token not found")
@@ -20,7 +24,7 @@ export const createChatCompletions = async (
       && x.content?.some((x) => x.type === "image_url"),
   )
 
-  // Agent/user check for X-Initiator header
+  // Agent/user check for x-initiator header
   // Determine if any message is from an agent ("assistant" or "tool")
   // Refactor `isAgentCall` logic to check only the last message in the history rather than any message. This prevents valid user messages from being incorrectly flagged as agent calls due to previous assistant history, ensuring proper credit consumption for multi-turn conversations.
   let isAgentCall = false
@@ -30,13 +34,22 @@ export const createChatCompletions = async (
       isAgentCall = ["assistant", "tool"].includes(lastMessage.role)
     }
   }
-  const requestedInitiator = options?.initiator ?? (isAgentCall ? "agent" : "user")
+  const requestedInitiator: "agent" | "user" =
+    options.subagentMarker || isAgentCall ? "agent" : "user"
   const initiator = applyRiskyInitiator(requestedInitiator, payload)
 
-  // Build headers and add X-Initiator
+  // Build headers and add x-initiator
   const headers: Record<string, string> = {
-    ...copilotHeaders(state, enableVision),
-    "X-Initiator": initiator,
+    ...copilotHeaders(state, options.requestId, enableVision),
+    "x-initiator": initiator,
+  }
+
+  if (options.subagentMarker) {
+    headers["x-interaction-type"] = "conversation-subagent"
+  }
+
+  if (options.sessionId) {
+    headers["x-interaction-id"] = options.sessionId
   }
 
   const startedAt = Date.now()

@@ -5,6 +5,7 @@ import type {
   AnthropicMessagesPayload,
   AnthropicResponse,
 } from "~/routes/messages/anthropic-types"
+import type { SubagentMarker } from "~/routes/messages/subagent-marker"
 
 import { copilotBaseUrl, copilotHeaders } from "~/lib/api-config"
 import { HTTPError } from "~/lib/error"
@@ -55,9 +56,11 @@ const buildAnthropicBetaHeader = (
 
 export const createMessages = async (
   payload: AnthropicMessagesPayload,
-  anthropicBetaHeader?: string,
-  options?: {
-    initiator?: "agent" | "user"
+  anthropicBetaHeader: string | undefined,
+  options: {
+    subagentMarker?: SubagentMarker | null
+    requestId: string
+    sessionId?: string
   },
 ): Promise<CreateMessagesReturn> => {
   if (!state.copilotToken) throw new Error("Copilot token not found")
@@ -76,13 +79,21 @@ export const createMessages = async (
         lastMessage.content.some((block) => block.type !== "tool_result")
       : true
   }
-  const requestedInitiator =
-    options?.initiator ?? (isInitiateRequest ? "user" : "agent")
+  const requestedInitiator: "agent" | "user" =
+    !options.subagentMarker && isInitiateRequest ? "user" : "agent"
   const initiator = applyRiskyInitiator(requestedInitiator, payload)
 
   const headers: Record<string, string> = {
-    ...copilotHeaders(state, enableVision),
-    "X-Initiator": initiator,
+    ...copilotHeaders(state, options.requestId, enableVision),
+    "x-initiator": initiator,
+  }
+
+  if (options.subagentMarker) {
+    headers["x-interaction-type"] = "conversation-subagent"
+  }
+
+  if (options.sessionId) {
+    headers["x-interaction-id"] = options.sessionId
   }
 
   // align with vscode copilot extension anthropic-beta
@@ -145,7 +156,7 @@ const applyRiskyInitiator = (
     if (message.role === "assistant") {
       return true
     }
-    if (message.role === "user" && Array.isArray(message.content)) {
+    if (Array.isArray(message.content)) {
       return message.content.some((block) => block.type === "tool_result")
     }
     return false

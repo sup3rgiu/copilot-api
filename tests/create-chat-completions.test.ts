@@ -29,7 +29,7 @@ const getLastHeaders = (): Record<string, string> => {
   return (call?.[1] as { headers: Record<string, string> }).headers
 }
 
-test("sets X-Initiator to agent if tool/assistant present", async () => {
+test("sets x-initiator to agent if tool/assistant present", async () => {
   const payload: ChatCompletionsPayload = {
     messages: [
       { role: "user", content: "hi" },
@@ -37,13 +37,13 @@ test("sets X-Initiator to agent if tool/assistant present", async () => {
     ],
     model: "gpt-test",
   }
-  await createChatCompletions(payload)
+  await createChatCompletions(payload, { requestId: "1" })
   expect(fetchMock).toHaveBeenCalled()
   const headers = getLastHeaders()
-  expect(headers["X-Initiator"]).toBe("agent")
+  expect(headers["x-initiator"]).toBe("agent")
 })
 
-test("sets X-Initiator to user if only user present", async () => {
+test("sets x-initiator to user if only user present", async () => {
   const payload: ChatCompletionsPayload = {
     messages: [
       { role: "user", content: "hi" },
@@ -51,26 +51,28 @@ test("sets X-Initiator to user if only user present", async () => {
     ],
     model: "gpt-test",
   }
-  await createChatCompletions(payload)
+  await createChatCompletions(payload, { requestId: "1" })
   expect(fetchMock).toHaveBeenCalled()
   const headers = getLastHeaders()
-  expect(headers["X-Initiator"]).toBe("user")
+  expect(headers["x-initiator"]).toBe("user")
 })
 
 test("risky mode keeps first session request as user", async () => {
   state.forceAgentInitiator = true
+  state.firstRiskyRequestSent = false
   const payload: ChatCompletionsPayload = {
     messages: [{ role: "user", content: "first turn" }],
     model: "gpt-test",
   }
-  await createChatCompletions(payload)
+  await createChatCompletions(payload, { requestId: "test" })
   const headers = getLastHeaders()
-  expect(headers["X-Initiator"]).toBe("user")
+  expect(headers["x-initiator"]).toBe("user")
   state.forceAgentInitiator = false
 })
 
 test("risky mode forces agent after history exists", async () => {
   state.forceAgentInitiator = true
+  state.firstRiskyRequestSent = false
   const payload: ChatCompletionsPayload = {
     messages: [
       { role: "user", content: "first turn" },
@@ -79,9 +81,9 @@ test("risky mode forces agent after history exists", async () => {
     ],
     model: "gpt-test",
   }
-  await createChatCompletions(payload)
+  await createChatCompletions(payload, { requestId: "test" })
   const headers = getLastHeaders()
-  expect(headers["X-Initiator"]).toBe("agent")
+  expect(headers["x-initiator"]).toBe("agent")
   state.forceAgentInitiator = false
 })
 
@@ -91,8 +93,11 @@ test("risky mode keeps explicit agent override for subagent flows", async () => 
     messages: [{ role: "user", content: "subagent first turn" }],
     model: "gpt-test",
   }
-  await createChatCompletions(payload, { initiator: "agent" })
+  await createChatCompletions(payload, {
+    requestId: "test",
+    subagentMarker: { session_id: "s1", agent_id: "a1", agent_type: "test" },
+  })
   const headers = getLastHeaders()
-  expect(headers["X-Initiator"]).toBe("agent")
+  expect(headers["x-initiator"]).toBe("agent")
   state.forceAgentInitiator = false
 })

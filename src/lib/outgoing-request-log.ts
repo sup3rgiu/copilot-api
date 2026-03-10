@@ -26,6 +26,6 @@ export const logOutgoingCopilotRequest = ({
     elapsedMs < 1000 ? `${elapsedMs}ms` : `${Math.round(elapsedMs / 1000)}s`
 
   consola.log(
-    `--> ${method.toUpperCase()} ${path} (X-Initiator: ${initiator}) ${status} ${elapsed}`,
+    `--> ${method.toUpperCase()} ${path} (x-initiator: ${initiator}) ${status} ${elapsed}`,
   )
 }

@@ -8,6 +8,9 @@ export interface State {
   models?: ModelsResponse
   vsCodeVersion?: string
 
+  macMachineId?: string
+  vsCodeSessionId?: string
+
   manualApprove: boolean
   forceAgentInitiator: boolean
   firstRiskyRequestSent: boolean
