@@ -59,7 +59,9 @@ export function getMac(): string | null {
 }
 
 export const cacheMacMachineId = () => {
-  const macAddress = getMac() ?? randomUUID()
+  // Use a random UUID per server run instead of the real MAC address,
+  // to avoid correlating requests across multiple accounts on the same device.
+  const macAddress = randomUUID()
   state.macMachineId = createHash("sha256")
     .update(macAddress, "utf8")
     .digest("hex")
