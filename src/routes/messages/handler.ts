@@ -9,8 +9,10 @@ import {
   getSmallModel,
   shouldCompactUseSmallModel,
   getReasoningEffortForModel,
+  isMessagesApiEnabled,
 } from "~/lib/config"
 import { createHandlerLogger } from "~/lib/logger"
+import { findEndpointModel } from "~/lib/models"
 import { checkRateLimit } from "~/lib/rate-limit"
 import { state } from "~/lib/state"
 import { generateRequestIdFromPayload, getRootSessionId } from "~/lib/utils"
@@ -107,9 +109,8 @@ export async function handleCompletion(c: Context) {
     await awaitApproval()
   }
 
-  const selectedModel = state.models?.data.find(
-    (m) => m.id === anthropicPayload.model,
-  )
+  const selectedModel = findEndpointModel(anthropicPayload.model)
+  anthropicPayload.model = selectedModel?.id ?? anthropicPayload.model
 
   if (shouldUseMessagesApi(selectedModel)) {
     return await handleWithMessagesApi(c, anthropicPayload, {
@@ -397,6 +398,10 @@ const shouldUseResponsesApi = (selectedModel: Model | undefined): boolean => {
 }
 
 const shouldUseMessagesApi = (selectedModel: Model | undefined): boolean => {
+  const useMessagesApi = isMessagesApiEnabled()
+  if (!useMessagesApi) {
+    return false
+  }
   return (
     selectedModel?.supported_endpoints?.includes(MESSAGES_ENDPOINT) ?? false
   )

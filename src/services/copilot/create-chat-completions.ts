@@ -3,7 +3,11 @@ import { events } from "fetch-event-stream"
 
 import type { SubagentMarker } from "~/routes/messages/subagent-marker"
 
-import { copilotHeaders, copilotBaseUrl } from "~/lib/api-config"
+import {
+  copilotBaseUrl,
+  copilotHeaders,
+  prepareInteractionHeaders,
+} from "~/lib/api-config"
 import { HTTPError } from "~/lib/error"
 import { logOutgoingCopilotRequest } from "~/lib/outgoing-request-log"
 import { state } from "~/lib/state"
@@ -44,13 +48,11 @@ export const createChatCompletions = async (
     "x-initiator": initiator,
   }
 
-  if (options.subagentMarker) {
-    headers["x-interaction-type"] = "conversation-subagent"
-  }
-
-  if (options.sessionId) {
-    headers["x-interaction-id"] = options.sessionId
-  }
+  prepareInteractionHeaders(
+    options.sessionId,
+    Boolean(options.subagentMarker),
+    headers,
+  )
 
   const startedAt = Date.now()
   const response = await fetch(`${copilotBaseUrl(state)}/chat/completions`, {

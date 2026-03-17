@@ -7,7 +7,11 @@ import type {
 } from "~/routes/messages/anthropic-types"
 import type { SubagentMarker } from "~/routes/messages/subagent-marker"
 
-import { copilotBaseUrl, copilotHeaders } from "~/lib/api-config"
+import {
+  copilotBaseUrl,
+  copilotHeaders,
+  prepareInteractionHeaders,
+} from "~/lib/api-config"
 import { HTTPError } from "~/lib/error"
 import { logOutgoingCopilotRequest } from "~/lib/outgoing-request-log"
 import { state } from "~/lib/state"
@@ -88,13 +92,11 @@ export const createMessages = async (
     "x-initiator": initiator,
   }
 
-  if (options.subagentMarker) {
-    headers["x-interaction-type"] = "conversation-subagent"
-  }
-
-  if (options.sessionId) {
-    headers["x-interaction-id"] = options.sessionId
-  }
+  prepareInteractionHeaders(
+    options.sessionId,
+    Boolean(options.subagentMarker),
+    headers,
+  )
 
   // align with vscode copilot extension anthropic-beta
   const anthropicBeta = buildAnthropicBetaHeader(
